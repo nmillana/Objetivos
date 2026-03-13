@@ -8,10 +8,13 @@ La app ahora incluye una pantalla de login local.
 
 Usuarios iniciales:
 
-- `nmillana@eess.cl` / `Objetivos2026!`
-- `maca@gerenciapersonas.local` / `Maca2026!`
-- `paula@gerenciapersonas.local` / `Paula2026!`
-- `carlos@gerenciapersonas.local` / `Carlos2026!`
+- `dperry@eess.cl` / `Objetivos20`
+- `pmunozd@eess.cl` / `Objetivos20`
+- `cpacheco@eess.cl` / `Objetivos20`
+- `msainz@eess.cl` / `Objetivos20`
+- `rrobles@eess.cl` / `Objetivos20`
+- `nmillana@eess.cl` / `Objetivos20`
+- `aoliverar@eess.cl` / `Objetivos20`
 
 Importante: este login es una capa local en frontend y no reemplaza autenticacion real. Si quieres seguridad real para un sitio publicado, conviene integrar Supabase, Auth0, Firebase o una capa de acceso externa.
 

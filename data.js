@@ -9,36 +9,60 @@
     workspace: "Objetivos Gerencia Personas",
     users: [
       {
-        id: "user-admin",
-        name: "Natalia Millana",
-        role: "Administradora",
-        email: "nmillana@eess.cl",
-        password: "Objetivos2026!",
-        avatar: "NM"
-      },
-      {
-        id: "user-maca",
-        name: "Maca",
-        role: "Cultura y DO",
-        email: "maca@gerenciapersonas.local",
-        password: "Maca2026!",
-        avatar: "MA"
+        id: "user-david",
+        name: "David",
+        role: "Seguimiento",
+        email: "dperry@eess.cl",
+        password: "Objetivos20",
+        avatar: "DA"
       },
       {
         id: "user-paula",
         name: "Paula",
-        role: "Compensacion y estructura",
-        email: "paula@gerenciapersonas.local",
-        password: "Paula2026!",
+        role: "Seguimiento",
+        email: "pmunozd@eess.cl",
+        password: "Objetivos20",
         avatar: "PA"
       },
       {
         id: "user-carlos",
         name: "Carlos",
-        role: "Servicios generales",
-        email: "carlos@gerenciapersonas.local",
-        password: "Carlos2026!",
+        role: "Seguimiento",
+        email: "cpacheco@eess.cl",
+        password: "Objetivos20",
         avatar: "CA"
+      },
+      {
+        id: "user-macarena",
+        name: "Macarena",
+        role: "Seguimiento",
+        email: "msainz@eess.cl",
+        password: "Objetivos20",
+        avatar: "MA"
+      },
+      {
+        id: "user-rose-marie",
+        name: "Rose Marie",
+        role: "Seguimiento",
+        email: "rrobles@eess.cl",
+        password: "Objetivos20",
+        avatar: "RM"
+      },
+      {
+        id: "user-natalia",
+        name: "Natalia",
+        role: "Administradora",
+        email: "nmillana@eess.cl",
+        password: "Objetivos20",
+        avatar: "NM"
+      },
+      {
+        id: "user-alejandra",
+        name: "Alejandra",
+        role: "Seguimiento",
+        email: "aoliverar@eess.cl",
+        password: "Objetivos20",
+        avatar: "AL"
       }
     ]
   },
@@ -196,3 +220,5 @@
     }
   ]
 };
+
+
