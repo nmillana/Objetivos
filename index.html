@@ -3,132 +3,225 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panel de Objetivos | Gerencia de Personas</title>
+  <title>Objetivos Hub | Gerencia de Personas</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="app-shell">
-    <header class="hero">
-      <div class="hero-copy">
-        <p class="eyebrow">Gerencia de Personas 2026</p>
-        <h1>Panel interactivo de objetivos y seguimiento</h1>
-        <p class="hero-text">
-          Consolida objetivos por Ã¡rea, revisa hitos, registra comentarios de reuniones de seguimiento
-          y mantÃ©n un respaldo exportable del avance de la gerencia.
+  <div class="login-shell" id="loginShell">
+    <div class="login-card">
+      <section class="login-visual">
+        <div class="login-brand-mark">
+          <span class="brand-square">J</span>
+          <div>
+            <p class="eyebrow">Gerencia de Personas 2026</p>
+            <h1>Board interactivo con look Jira</h1>
+          </div>
+        </div>
+        <p class="login-lead">
+          Sigue objetivos por area, mueve el foco de cada reunion y deja comentarios, acuerdos y riesgos en una sola vista.
         </p>
+        <div class="login-highlights">
+          <article>
+            <strong>Board</strong>
+            <span>Columnas por estado para ver el avance real.</span>
+          </article>
+          <article>
+            <strong>Insights</strong>
+            <span>Hitos proximos, avance, KPIs y notas ejecutivas.</span>
+          </article>
+          <article>
+            <strong>Seguimiento</strong>
+            <span>Comentarios por reunion con acuerdos y proximos pasos.</span>
+          </article>
+        </div>
+      </section>
+
+      <section class="login-panel">
+        <div class="jira-mark">
+          <span class="brand-square small">J</span>
+          <div>
+            <p class="eyebrow">Acceso</p>
+            <h2>Inicia sesion para entrar al workspace</h2>
+          </div>
+        </div>
+        <p class="login-copy">
+          Este acceso bloquea la entrada al tablero publicado y mantiene la sesion en este navegador.
+        </p>
+
+        <form id="loginForm" class="login-form">
+          <label class="field">
+            <span>Correo</span>
+            <input id="loginEmail" name="email" type="email" placeholder="nmillana@eess.cl" required>
+          </label>
+
+          <label class="field">
+            <span>Contrasena</span>
+            <input id="loginPassword" name="password" type="password" placeholder="Ingresa tu contrasena" required>
+          </label>
+
+          <p id="loginError" class="login-error" hidden>Credenciales invalidas. Revisa correo y contrasena.</p>
+          <button type="submit" class="primary-button login-button">Entrar al board</button>
+        </form>
+
+        <div class="login-footnote">
+          <strong>Importante:</strong> esta es una capa de acceso local util para GitHub Pages. Si quieres autenticacion realmente segura, en el siguiente paso podemos integrarla con un proveedor externo.
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="jira-shell is-hidden" id="appShell">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button type="button" class="topbar-icon" aria-label="Workspace">+</button>
+        <div class="brand-lockup">
+          <span class="brand-square small">J</span>
+          <div>
+            <strong>Jira-style Goals</strong>
+            <span>Gerencia de Personas</span>
+          </div>
+        </div>
       </div>
-      <div class="hero-actions">
-        <button type="button" class="primary-button" id="addObjectiveBtn">Nuevo objetivo</button>
-        <button type="button" class="secondary-button" id="exportBtn">Exportar respaldo</button>
-        <label class="secondary-button file-label" for="importInput">Importar respaldo</label>
+
+      <div class="topbar-center">
+        <label class="top-search">
+          <span>Search</span>
+          <input id="searchInput" type="search" placeholder="Buscar objetivo, area, responsable o tag">
+        </label>
+      </div>
+
+      <div class="topbar-right">
+        <button type="button" class="secondary-button" id="exportBtn">Exportar</button>
+        <label class="secondary-button file-label" for="importInput">Importar</label>
         <input id="importInput" type="file" accept="application/json" hidden>
-        <button type="button" class="ghost-button" id="resetBtn">Restaurar base</button>
+        <button type="button" class="primary-button" id="addObjectiveBtn">Create</button>
+        <button type="button" class="ghost-button" id="logoutBtn">Salir</button>
+        <div class="user-chip">
+          <span class="user-avatar" id="currentUserAvatar">--</span>
+          <div>
+            <strong id="currentUserName">Usuario</strong>
+            <span id="currentUserRole">Workspace</span>
+          </div>
+        </div>
       </div>
     </header>
 
-    <section class="summary-grid" id="summaryGrid"></section>
-
-    <section class="toolbar card">
-      <div class="toolbar-head">
-        <div>
-          <p class="section-kicker">Vista ejecutiva</p>
-          <h2>Filtros y focos de seguimiento</h2>
-        </div>
-        <div class="legend">
-          <span class="legend-chip status-encaminado">Encaminado</span>
-          <span class="legend-chip status-en-curso">En curso</span>
-          <span class="legend-chip status-en-riesgo">En riesgo</span>
-          <span class="legend-chip status-completado">Completado</span>
-        </div>
-      </div>
-
-      <div class="filter-grid">
-        <label class="field">
-          <span>Ãrea</span>
-          <select id="areaFilter"></select>
-        </label>
-
-        <label class="field">
-          <span>Estado</span>
-          <select id="statusFilter"></select>
-        </label>
-
-        <label class="field">
-          <span>Responsable</span>
-          <select id="ownerFilter"></select>
-        </label>
-
-        <label class="field field-search">
-          <span>BÃºsqueda</span>
-          <input id="searchInput" type="search" placeholder="Buscar por objetivo, Ã¡rea, responsable o tag">
-        </label>
-      </div>
-
-      <div class="toggle-row">
-        <label class="checkbox-pill">
-          <input type="checkbox" id="dueSoonOnly">
-          <span>Mostrar solo hitos prÃ³ximos (45 dÃ­as)</span>
-        </label>
-        <label class="checkbox-pill">
-          <input type="checkbox" id="atRiskOnly">
-          <span>Mostrar solo objetivos en riesgo</span>
-        </label>
-      </div>
-    </section>
-
-    <section class="milestone-section card">
-      <div class="section-head">
-        <div>
-          <p class="section-kicker">Agenda de gestiÃ³n</p>
-          <h2>PrÃ³ximos hitos</h2>
-        </div>
-        <p class="section-note">Priorizados por fecha para facilitar reuniones de seguimiento.</p>
-      </div>
-      <div id="milestoneList" class="milestone-list"></div>
-    </section>
-
-    <section class="main-layout">
-      <div class="main-column">
-        <section class="card">
-          <div class="section-head">
-            <div>
-              <p class="section-kicker">Mapa por Ã¡rea</p>
-              <h2>DistribuciÃ³n de objetivos</h2>
-            </div>
-            <p class="section-note">Haz clic en un Ã¡rea para filtrar la vista.</p>
+    <div class="workspace-shell">
+      <aside class="sidebar">
+        <section class="sidebar-project">
+          <div class="project-badge">GP</div>
+          <div>
+            <strong>Gerencia de Personas</strong>
+            <span>Objective tracking workspace</span>
           </div>
-          <div id="areaGrid" class="area-grid"></div>
         </section>
 
-        <section class="card">
-          <div class="section-head">
-            <div>
-              <p class="section-kicker">Seguimiento activo</p>
-              <h2>Objetivos cargados</h2>
-            </div>
-            <p class="section-note"><span id="resultCount">0</span> objetivos visibles</p>
-          </div>
-          <div id="objectiveList" class="objective-list"></div>
-        </section>
-      </div>
+        <nav class="sidebar-nav">
+          <button type="button" class="sidebar-link active">Board</button>
+          <button type="button" class="sidebar-link">Backlog</button>
+          <button type="button" class="sidebar-link">Reports</button>
+          <button type="button" class="sidebar-link">Meetings</button>
+          <button type="button" class="sidebar-link">Settings</button>
+        </nav>
 
-      <aside class="detail-panel card" id="detailPanel"></aside>
-    </section>
+        <section class="sidebar-section">
+          <div class="sidebar-title-row">
+            <h2>Areas</h2>
+            <button type="button" class="mini-link" id="clearAreaFilterBtn">Ver todas</button>
+          </div>
+          <div id="areaNav" class="area-nav"></div>
+        </section>
+
+        <section class="sidebar-section">
+          <h2>Quick filters</h2>
+          <label class="field compact-field">
+            <span>Area</span>
+            <select id="areaFilter"></select>
+          </label>
+          <label class="field compact-field">
+            <span>Estado</span>
+            <select id="statusFilter"></select>
+          </label>
+          <label class="field compact-field">
+            <span>Responsable</span>
+            <select id="ownerFilter"></select>
+          </label>
+          <label class="filter-check">
+            <input type="checkbox" id="dueSoonOnly">
+            <span>Solo hitos en 45 dias</span>
+          </label>
+          <label class="filter-check">
+            <input type="checkbox" id="atRiskOnly">
+            <span>Solo objetivos en riesgo</span>
+          </label>
+          <button type="button" class="subtle-button" id="resetBtn">Restaurar base</button>
+        </section>
+      </aside>
+
+      <main class="workspace-main">
+        <section class="board-header">
+          <div class="board-header-copy">
+            <p class="crumb">Projects / Gerencia de Personas</p>
+            <h1>Board de objetivos</h1>
+            <p>
+              Vista estilo Jira para seguir objetivos estrategicos, hitos, avances y comentarios de reunion desde un mismo lugar.
+            </p>
+            <p class="board-count"><span id="resultCount">0</span> objetivos visibles</p>
+          </div>
+          <div class="summary-grid" id="summaryGrid"></div>
+        </section>
+
+        <section class="milestone-section">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Timeline</p>
+              <h2>Hitos proximos</h2>
+            </div>
+            <p>Priorizados para la siguiente reunion de seguimiento.</p>
+          </div>
+          <div class="milestone-strip" id="milestoneStrip"></div>
+        </section>
+
+        <section class="workspace-board">
+          <div class="kanban-shell">
+            <div class="section-heading sticky-heading">
+              <div>
+                <p class="eyebrow">Board</p>
+                <h2>Estado de los objetivos</h2>
+              </div>
+              <p>Selecciona una tarjeta para ver el detalle completo a la derecha.</p>
+            </div>
+            <div class="kanban-columns" id="boardColumns"></div>
+          </div>
+
+          <aside class="insights-panel">
+            <div class="section-heading panel-heading">
+              <div>
+                <p class="eyebrow">Insights</p>
+                <h2 id="detailTitle">Selecciona un objetivo</h2>
+              </div>
+              <p>Actualiza estado, avance, hitos y comentarios.</p>
+            </div>
+            <div id="detailPanel" class="detail-panel"></div>
+          </aside>
+        </section>
+      </main>
+    </div>
   </div>
 
   <dialog id="objectiveDialog" class="objective-dialog">
     <form id="objectiveForm" method="dialog" class="dialog-form">
       <div class="dialog-head">
         <div>
-          <p class="section-kicker">Nuevo registro</p>
-          <h2>Agregar objetivo al panel</h2>
+          <p class="eyebrow">Create issue</p>
+          <h2>Agregar objetivo al board</h2>
         </div>
-        <button type="button" class="icon-button" id="closeDialogBtn" aria-label="Cerrar">Ã—</button>
+        <button type="button" class="icon-button" id="closeDialogBtn" aria-label="Cerrar">x</button>
       </div>
 
       <div class="dialog-grid">
         <label class="field">
-          <span>Ãrea</span>
+          <span>Area</span>
           <select id="newArea" name="area" required></select>
         </label>
 
@@ -138,12 +231,12 @@
         </label>
 
         <label class="field field-full">
-          <span>TÃ­tulo del objetivo</span>
+          <span>Titulo del objetivo</span>
           <input id="newTitle" name="title" type="text" placeholder="Ej. Fortalecer liderazgo y cultura" required>
         </label>
 
         <label class="field field-full">
-          <span>DescripciÃ³n</span>
+          <span>Descripcion</span>
           <textarea id="newDescription" name="description" rows="4" placeholder="Contexto, alcance y foco del objetivo" required></textarea>
         </label>
 
@@ -164,8 +257,8 @@
         </label>
 
         <label class="field">
-          <span>PrÃ³ximo hito</span>
-          <input id="newMilestoneName" name="milestoneName" type="text" placeholder="Ej. ValidaciÃ³n con gerencia">
+          <span>Proximo hito</span>
+          <input id="newMilestoneName" name="milestoneName" type="text" placeholder="Ej. Validacion con gerencia">
         </label>
 
         <label class="field">
@@ -190,7 +283,3 @@
   <script src="app.js"></script>
 </body>
 </html>
-
-
-
-

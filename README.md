@@ -1,25 +1,38 @@
 ﻿# Panel de Objetivos Gerencia de Personas
 
-Este panel quedó preparado como una app web local y no necesita instalación adicional.
+Este panel quedo preparado como una app web local y tambien para publicar en GitHub Pages.
 
-## Cómo usarlo
+## Acceso actual
 
-1. Abre `index.html` en tu navegador.
-2. Filtra por área, estado o responsable según tu reunión.
-3. Entra a cada objetivo con `Abrir seguimiento`.
-4. Registra comentarios, acuerdos, riesgos y próximos pasos.
-5. Usa `Exportar respaldo` para guardar una copia en JSON.
-6. Usa `Importar respaldo` si quieres recuperar el panel en otro navegador o equipo.
+La app ahora incluye una pantalla de login local.
 
-## Qué quedó cargado
+Usuarios iniciales:
 
-- Objetivos estratégicos base levantados desde `OBJETIVOS ESTRATEGICOS GCIA PERSONAS.xlsx`.
-- Objetivos detallados del documento `Objetivos_DO_2026.docx`.
-- La distribución a las 5 áreas se dejó prearmada para que puedas empezar a usar el panel de inmediato.
+- `nmillana@eess.cl` / `Objetivos2026!`
+- `maca@gerenciapersonas.local` / `Maca2026!`
+- `paula@gerenciapersonas.local` / `Paula2026!`
+- `carlos@gerenciapersonas.local` / `Carlos2026!`
 
-## Importante
+Importante: este login es una capa local en frontend y no reemplaza autenticacion real. Si quieres seguridad real para un sitio publicado, conviene integrar Supabase, Auth0, Firebase o una capa de acceso externa.
 
-- Los comentarios y cambios se guardan en el almacenamiento local del navegador.
-- Si limpias los datos del navegador, podrías perder el seguimiento si no exportaste respaldo.
-- Puedes crear objetivos nuevos directamente desde el panel.
-- Quedó pendiente revisar `Objetivos_Gerencia_Personas_2026.docx` porque estaba bloqueado por otro proceso al momento de construir la base inicial.
+## Como usarlo
+
+1. Abre `index.html` en tu navegador o entra al sitio publicado.
+2. Inicia sesion.
+3. Filtra por area, estado o responsable.
+4. Selecciona una tarjeta del board para abrir el panel de insights.
+5. Registra comentarios, acuerdos, riesgos y proximos pasos.
+6. Usa `Exportar` para guardar un respaldo JSON.
+7. Usa `Importar` para recuperar respaldo en otro navegador o equipo.
+
+## Fuentes base consideradas
+
+- `OBJETIVOS ESTRATEGICOS GCIA PERSONAS.xlsx`
+- `Objetivos_DO_2026.docx`
+
+## Archivos principales
+
+- `index.html`: estructura del login y board tipo Jira.
+- `styles.css`: estilos visuales tipo Jira.
+- `data.js`: base inicial de objetivos y usuarios de acceso local.
+- `app.js`: login, filtros, board, detalle, comentarios y persistencia.
