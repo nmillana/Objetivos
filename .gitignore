@@ -1,0 +1,9 @@
+﻿# Office temporales y fuentes internas
+~$*.docx
+~$*.xlsx
+*.docx
+*.xlsx
+*.xlsm
+
+# Respaldos exportados desde el panel
+panel-objetivos-gerencia-personas-*.json

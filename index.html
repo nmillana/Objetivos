@@ -1,0 +1,196 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel de Objetivos | Gerencia de Personas</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Gerencia de Personas 2026</p>
+        <h1>Panel interactivo de objetivos y seguimiento</h1>
+        <p class="hero-text">
+          Consolida objetivos por Ã¡rea, revisa hitos, registra comentarios de reuniones de seguimiento
+          y mantÃ©n un respaldo exportable del avance de la gerencia.
+        </p>
+      </div>
+      <div class="hero-actions">
+        <button type="button" class="primary-button" id="addObjectiveBtn">Nuevo objetivo</button>
+        <button type="button" class="secondary-button" id="exportBtn">Exportar respaldo</button>
+        <label class="secondary-button file-label" for="importInput">Importar respaldo</label>
+        <input id="importInput" type="file" accept="application/json" hidden>
+        <button type="button" class="ghost-button" id="resetBtn">Restaurar base</button>
+      </div>
+    </header>
+
+    <section class="summary-grid" id="summaryGrid"></section>
+
+    <section class="toolbar card">
+      <div class="toolbar-head">
+        <div>
+          <p class="section-kicker">Vista ejecutiva</p>
+          <h2>Filtros y focos de seguimiento</h2>
+        </div>
+        <div class="legend">
+          <span class="legend-chip status-encaminado">Encaminado</span>
+          <span class="legend-chip status-en-curso">En curso</span>
+          <span class="legend-chip status-en-riesgo">En riesgo</span>
+          <span class="legend-chip status-completado">Completado</span>
+        </div>
+      </div>
+
+      <div class="filter-grid">
+        <label class="field">
+          <span>Ãrea</span>
+          <select id="areaFilter"></select>
+        </label>
+
+        <label class="field">
+          <span>Estado</span>
+          <select id="statusFilter"></select>
+        </label>
+
+        <label class="field">
+          <span>Responsable</span>
+          <select id="ownerFilter"></select>
+        </label>
+
+        <label class="field field-search">
+          <span>BÃºsqueda</span>
+          <input id="searchInput" type="search" placeholder="Buscar por objetivo, Ã¡rea, responsable o tag">
+        </label>
+      </div>
+
+      <div class="toggle-row">
+        <label class="checkbox-pill">
+          <input type="checkbox" id="dueSoonOnly">
+          <span>Mostrar solo hitos prÃ³ximos (45 dÃ­as)</span>
+        </label>
+        <label class="checkbox-pill">
+          <input type="checkbox" id="atRiskOnly">
+          <span>Mostrar solo objetivos en riesgo</span>
+        </label>
+      </div>
+    </section>
+
+    <section class="milestone-section card">
+      <div class="section-head">
+        <div>
+          <p class="section-kicker">Agenda de gestiÃ³n</p>
+          <h2>PrÃ³ximos hitos</h2>
+        </div>
+        <p class="section-note">Priorizados por fecha para facilitar reuniones de seguimiento.</p>
+      </div>
+      <div id="milestoneList" class="milestone-list"></div>
+    </section>
+
+    <section class="main-layout">
+      <div class="main-column">
+        <section class="card">
+          <div class="section-head">
+            <div>
+              <p class="section-kicker">Mapa por Ã¡rea</p>
+              <h2>DistribuciÃ³n de objetivos</h2>
+            </div>
+            <p class="section-note">Haz clic en un Ã¡rea para filtrar la vista.</p>
+          </div>
+          <div id="areaGrid" class="area-grid"></div>
+        </section>
+
+        <section class="card">
+          <div class="section-head">
+            <div>
+              <p class="section-kicker">Seguimiento activo</p>
+              <h2>Objetivos cargados</h2>
+            </div>
+            <p class="section-note"><span id="resultCount">0</span> objetivos visibles</p>
+          </div>
+          <div id="objectiveList" class="objective-list"></div>
+        </section>
+      </div>
+
+      <aside class="detail-panel card" id="detailPanel"></aside>
+    </section>
+  </div>
+
+  <dialog id="objectiveDialog" class="objective-dialog">
+    <form id="objectiveForm" method="dialog" class="dialog-form">
+      <div class="dialog-head">
+        <div>
+          <p class="section-kicker">Nuevo registro</p>
+          <h2>Agregar objetivo al panel</h2>
+        </div>
+        <button type="button" class="icon-button" id="closeDialogBtn" aria-label="Cerrar">Ã—</button>
+      </div>
+
+      <div class="dialog-grid">
+        <label class="field">
+          <span>Ãrea</span>
+          <select id="newArea" name="area" required></select>
+        </label>
+
+        <label class="field">
+          <span>Responsable</span>
+          <input id="newOwner" name="owner" type="text" placeholder="Ej. Paula" required>
+        </label>
+
+        <label class="field field-full">
+          <span>TÃ­tulo del objetivo</span>
+          <input id="newTitle" name="title" type="text" placeholder="Ej. Fortalecer liderazgo y cultura" required>
+        </label>
+
+        <label class="field field-full">
+          <span>DescripciÃ³n</span>
+          <textarea id="newDescription" name="description" rows="4" placeholder="Contexto, alcance y foco del objetivo" required></textarea>
+        </label>
+
+        <label class="field">
+          <span>Estado</span>
+          <select id="newStatus" name="status">
+            <option value="no-iniciado">No iniciado</option>
+            <option value="en-curso" selected>En curso</option>
+            <option value="encaminado">Encaminado</option>
+            <option value="en-riesgo">En riesgo</option>
+            <option value="completado">Completado</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Avance (%)</span>
+          <input id="newProgress" name="progress" type="number" min="0" max="100" value="0">
+        </label>
+
+        <label class="field">
+          <span>PrÃ³ximo hito</span>
+          <input id="newMilestoneName" name="milestoneName" type="text" placeholder="Ej. ValidaciÃ³n con gerencia">
+        </label>
+
+        <label class="field">
+          <span>Fecha del hito</span>
+          <input id="newMilestoneDate" name="milestoneDate" type="date">
+        </label>
+
+        <label class="field field-full">
+          <span>Tags</span>
+          <input id="newTags" name="tags" type="text" placeholder="Separados por coma. Ej. cultura, clima, 2026">
+        </label>
+      </div>
+
+      <div class="dialog-actions">
+        <button type="button" class="ghost-button" id="cancelDialogBtn">Cancelar</button>
+        <button type="submit" class="primary-button">Guardar objetivo</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
+
+
+
+
