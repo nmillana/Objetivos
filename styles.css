@@ -82,9 +82,9 @@ p {
 }
 
 .login-card {
-  width: min(1100px, 100%);
+  width: min(700px, 100%);
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.85fr);
+  grid-template-columns: 1fr;
   border: 1px solid rgba(9, 30, 66, 0.1);
   border-radius: 28px;
   background: rgba(255, 255, 255, 0.96);
