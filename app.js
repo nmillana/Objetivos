@@ -16,7 +16,10 @@ const BOARD_COLUMNS = [
 
 const STORAGE_KEY = "panel-objetivos-gerencia-personas-v2";
 const SESSION_KEY = "panel-objetivos-session-v1";
-const TODAY = new Date("2026-03-13T00:00:00");
+const TODAY = new Date();
+const AI_ENDPOINT = "/api/ai/objective-draft";
+const AI_HEALTH_ENDPOINT = "/api/ai/health";
+const DEFAULT_AI_MODEL = "gpt-5-mini";
 
 const refs = {
   loginShell: document.getElementById("loginShell"),
@@ -43,12 +46,23 @@ const refs = {
   summaryGrid: document.getElementById("summaryGrid"),
   milestoneStrip: document.getElementById("milestoneStrip"),
   boardColumns: document.getElementById("boardColumns"),
+  detailDialog: document.getElementById("detailDialog"),
   detailPanel: document.getElementById("detailPanel"),
   detailTitle: document.getElementById("detailTitle"),
+  closeDetailDialogBtn: document.getElementById("closeDetailDialogBtn"),
   resultCount: document.getElementById("resultCount"),
   currentUserName: document.getElementById("currentUserName"),
   currentUserRole: document.getElementById("currentUserRole"),
-  currentUserAvatar: document.getElementById("currentUserAvatar")
+  currentUserAvatar: document.getElementById("currentUserAvatar"),
+  createAssistantBtn: document.getElementById("createAssistantBtn"),
+  goalCreatorDialog: document.getElementById("goalCreatorDialog"),
+  goalCreatorForm: document.getElementById("goalCreatorForm"),
+  closeCreatorDialogBtn: document.getElementById("closeCreatorDialogBtn"),
+  nextToStep2Btn: document.getElementById("nextToStep2Btn"),
+  backToStep1Btn: document.getElementById("backToStep1Btn"),
+  regenerateDraftBtn: document.getElementById("regenerateDraftBtn"),
+  aiStatusMessage: document.getElementById("aiStatusMessage"),
+  generatedMeta: document.getElementById("generatedMeta")
 };
 
 const state = {
@@ -62,7 +76,12 @@ const state = {
     dueSoonOnly: false,
     atRiskOnly: false
   },
-  selectedObjectiveId: ""
+  selectedObjectiveId: "",
+  ai: {
+    available: false,
+    checked: false,
+    lastModel: DEFAULT_AI_MODEL
+  }
 };
 
 function loadData() {
@@ -132,6 +151,8 @@ function populateAreaOptions() {
     .join("");
   refs.areaFilter.value = areas.includes(state.filters.area) ? state.filters.area : "all";
   state.filters.area = refs.areaFilter.value;
+  // Also populate creator area
+  populateCreatorAreaOptions();
 }
 
 function populateOwnerOptions() {
@@ -162,10 +183,12 @@ function bindEvents() {
     state.filters.owner = event.target.value;
     render();
   });
-  refs.dueSoonOnly.addEventListener("change", (event) => {
-    state.filters.dueSoonOnly = event.target.checked;
-    render();
-  });
+  if (refs.dueSoonOnly) {
+    refs.dueSoonOnly.addEventListener("change", (event) => {
+      state.filters.dueSoonOnly = event.target.checked;
+      render();
+    });
+  }
   refs.atRiskOnly.addEventListener("change", (event) => {
     state.filters.atRiskOnly = event.target.checked;
     render();
@@ -191,29 +214,36 @@ function bindEvents() {
     if (!card) return;
     state.selectedObjectiveId = card.getAttribute("data-open-objective");
     render();
+    openDetailDialog();
   });
-  refs.detailPanel.addEventListener("submit", (event) => {
-    if (event.target.matches("#quickUpdateForm")) {
-      event.preventDefault();
-      submitQuickUpdate(event);
-      return;
-    }
-    if (event.target.matches("#meetingForm")) {
-      event.preventDefault();
-      submitMeeting(event);
-    }
-  });
-  refs.detailPanel.addEventListener("click", (event) => {
-    const deleteMeetingButton = event.target.closest("[data-delete-meeting]");
-    const deleteObjectiveButton = event.target.closest("[data-delete-objective]");
-    if (deleteMeetingButton) removeMeeting(deleteMeetingButton.getAttribute("data-delete-meeting"));
-    if (deleteObjectiveButton) removeObjective(deleteObjectiveButton.getAttribute("data-delete-objective"));
-  });
-  refs.exportBtn.addEventListener("click", exportBackup);
-  refs.importInput.addEventListener("change", importBackup);
+  if (refs.detailPanel) {
+    refs.detailPanel.addEventListener("submit", (event) => {
+      if (event.target.matches("#quickUpdateForm")) {
+        event.preventDefault();
+        submitQuickUpdate(event);
+        return;
+      }
+      if (event.target.matches("#meetingForm")) {
+        event.preventDefault();
+        submitMeeting(event);
+      }
+    });
+    refs.detailPanel.addEventListener("click", (event) => {
+      const deleteMeetingButton = event.target.closest("[data-delete-meeting]");
+      const deleteObjectiveButton = event.target.closest("[data-delete-objective]");
+      if (deleteMeetingButton) removeMeeting(deleteMeetingButton.getAttribute("data-delete-meeting"));
+      if (deleteObjectiveButton) removeObjective(deleteObjectiveButton.getAttribute("data-delete-objective"));
+    });
+  }
   refs.resetBtn.addEventListener("click", resetSeed);
+  refs.createAssistantBtn.addEventListener("click", openCreatorDialog);
+  refs.closeCreatorDialogBtn.addEventListener("click", closeCreatorDialog);
+  if (refs.closeDetailDialogBtn) refs.closeDetailDialogBtn.addEventListener("click", closeDetailDialog);
+  refs.nextToStep2Btn.addEventListener("click", nextToStep2);
+  refs.backToStep1Btn.addEventListener("click", backToStep1);
+  refs.regenerateDraftBtn.addEventListener("click", nextToStep2);
+  refs.goalCreatorForm.addEventListener("submit", submitGoalCreator);
 }
-
 function syncAccess() {
   const loggedIn = Boolean(state.session);
   refs.loginShell.classList.toggle("is-hidden", loggedIn);
@@ -258,12 +288,10 @@ function render() {
   ensureSelection(visibleObjectives);
   renderAreaNav(visibleObjectives);
   renderSummary(visibleObjectives);
-  renderMilestones(visibleObjectives);
   renderBoardColumns(visibleObjectives);
   renderDetail();
   refs.resultCount.textContent = String(visibleObjectives.length);
 }
-
 function filteredObjectives() {
   return state.data.objectives.filter((item) => {
     if (state.filters.area !== "all" && item.area !== state.filters.area) return false;
@@ -303,11 +331,12 @@ function renderAreaNav(visibleObjectives) {
 }
 
 function renderSummary(items) {
+  const pending = items.filter((item) => !item.nextFollowUp || new Date(item.nextFollowUp) <= TODAY).length;
   const cards = [
-    { label: "Objetivos visibles", value: items.length, meta: "segun los filtros activos" },
-    { label: "Avance promedio", value: `${average(items, "progress")}%`, meta: "promedio del board visible" },
-    { label: "En riesgo", value: items.filter((item) => item.status === "en-riesgo").length, meta: "requieren foco inmediato" },
-    { label: "Comentarios", value: items.reduce((sum, item) => sum + item.meetings.length, 0), meta: "seguimientos cargados" }
+    { label: "Visibles", value: items.length, meta: "segun los filtros" },
+    { label: "Pendientes", value: pending, meta: "sin seguimiento futuro" },
+    { label: "En riesgo", value: items.filter((item) => item.status === "en-riesgo").length, meta: "requieren foco" },
+    { label: "Seguimientos", value: items.reduce((sum, item) => sum + item.meetings.length, 0), meta: "comentarios cargados" }
   ];
   refs.summaryGrid.innerHTML = cards.map((card) => `
     <article class="summary-card">
@@ -317,7 +346,6 @@ function renderSummary(items) {
     </article>
   `).join("");
 }
-
 function renderMilestones(items) {
   const milestones = upcomingMilestones(items, 120).slice(0, 4);
   if (!milestones.length) {
@@ -354,9 +382,10 @@ function renderBoardColumns(items) {
 }
 
 function renderObjectiveCard(item) {
-  const next = nextMilestone(item);
   const meetingCount = item.meetings.length;
   const selected = item.id === state.selectedObjectiveId ? "is-selected" : "";
+  const followUp = item.nextFollowUp ? formatDate(item.nextFollowUp) : "Pendiente";
+  const dueDate = item.dueDate ? formatDate(item.dueDate) : "Sin fecha";
   return `
     <article class="objective-card ${selected}" data-open-objective="${esc(item.id)}">
       <div class="card-meta">
@@ -374,22 +403,26 @@ function renderObjectiveCard(item) {
         <div class="metric-row"><span>Avance</span><strong>${item.progress}%</strong></div>
         <div class="progress-track"><div class="progress-fill" style="width:${item.progress}%"></div></div>
       </div>
+      <div class="summary-inline">
+        <span class="tag-chip">Seguimiento: ${esc(followUp)}</span>
+        <span class="tag-chip">Fecha objetivo: ${esc(dueDate)}</span>
+      </div>
       <div class="card-footer">
         <div class="owner-avatar">${esc(initials(item.owner))}</div>
         <span>${esc(item.owner)}</span>
-        <span>${esc(next ? formatDate(next.date) : "Sin hito")}</span>
-        <span>${meetingCount} comentarios</span>
+        <span>${meetingCount} seguimientos</span>
       </div>
     </article>
   `;
 }
 function renderDetail() {
   const item = state.data.objectives.find((objective) => objective.id === state.selectedObjectiveId);
-  refs.detailTitle.textContent = item ? item.title : "Selecciona un objetivo";
+  refs.detailTitle.textContent = item ? item.title : "Seguimiento del objetivo";
   if (!item) {
-    refs.detailPanel.innerHTML = `<div class="empty-state"><div><strong>Sin seleccion.</strong><p>Elige una tarjeta del board para ver detalle, KPIs y comentarios.</p></div></div>`;
+    refs.detailPanel.innerHTML = `<div class="empty-state"><div><strong>Sin objetivo seleccionado.</strong><p>Haz click en una tarjeta del board para abrir su seguimiento.</p></div></div>`;
     return;
   }
+
   const meetings = [...item.meetings].sort((a, b) => new Date(b.date) - new Date(a.date));
   refs.detailPanel.innerHTML = `
     <div class="detail-stack">
@@ -399,31 +432,37 @@ function renderDetail() {
             <div class="summary-inline">
               <span class="issue-chip">${esc(issueKey(item))}</span>
               <span class="area-chip">${esc(item.area)}</span>
-              <span class="tag-chip">${esc(item.type || "Objetivo")}</span>
+              <span class="status-pill ${statusOf(item.status).className}">${esc(statusOf(item.status).label)}</span>
+              <span class="tag-chip">Avance: ${item.progress}%</span>
             </div>
-            <h3>${esc(item.title)}</h3>
           </div>
-          <button type="button" class="delete-link" data-delete-objective="${esc(item.id)}">Eliminar</button>
+          <button type="button" class="delete-link" data-delete-objective="${esc(item.id)}">Eliminar objetivo</button>
         </div>
         <p>${esc(item.description)}</p>
         <div class="detail-badges">
           <div>
-            <span class="status-pill ${statusOf(item.status).className}">${esc(statusOf(item.status).label)}</span>
-            <span class="tag-chip">Owner: ${esc(item.owner)}</span>
-            <span class="tag-chip">Avance: ${item.progress}%</span>
+            <span class="tag-chip">Responsable: ${esc(item.owner)}</span>
+            <span class="tag-chip">Seguimiento: ${esc(item.nextFollowUp ? formatDate(item.nextFollowUp) : "Pendiente")}</span>
+            <span class="tag-chip">Fecha objetivo: ${esc(item.dueDate ? formatDate(item.dueDate) : "Sin fecha")}</span>
+            <span class="tag-chip">${item.meetings.length} seguimientos</span>
           </div>
-          <div>
-            <span class="tag-chip">Proximo seguimiento: ${esc(item.nextFollowUp ? formatDate(item.nextFollowUp) : "Sin fecha")}</span>
-            <span class="tag-chip">Compromiso: ${esc(item.dueDate ? formatDate(item.dueDate) : "Sin fecha")}</span>
-          </div>
+          ${item.executiveNote ? `<div><span class="tag-chip">Nota: ${esc(item.executiveNote)}</span></div>` : ""}
         </div>
       </section>
 
       <section class="detail-block">
-        <h3>Actualizacion rapida</h3>
+        <h3>Editar objetivo</h3>
         <form id="quickUpdateForm" class="quick-form">
           <input type="hidden" name="objectiveId" value="${esc(item.id)}">
           <div class="form-grid">
+            <label class="field field-full">
+              <span>Titulo</span>
+              <input name="title" type="text" value="${esc(item.title)}" required>
+            </label>
+            <label class="field">
+              <span>Responsable</span>
+              <input name="owner" type="text" value="${esc(item.owner)}" required>
+            </label>
             <label class="field">
               <span>Estado</span>
               <select name="status">${statusOptions(item.status)}</select>
@@ -437,48 +476,26 @@ function renderDetail() {
               <input name="nextFollowUp" type="date" value="${esc(item.nextFollowUp || "")}">
             </label>
             <label class="field">
-              <span>Fecha compromiso</span>
+              <span>Fecha objetivo</span>
               <input name="dueDate" type="date" value="${esc(item.dueDate || "")}">
             </label>
             <label class="field field-full">
+              <span>Descripcion</span>
+              <textarea name="description" rows="4">${esc(item.description || "")}</textarea>
+            </label>
+            <label class="field field-full">
               <span>Nota ejecutiva</span>
-              <textarea name="executiveNote" rows="4">${esc(item.executiveNote || "")}</textarea>
+              <textarea name="executiveNote" rows="3">${esc(item.executiveNote || "")}</textarea>
             </label>
           </div>
           <div class="dialog-actions">
-            <button type="submit" class="primary-button">Guardar update</button>
+            <button type="submit" class="primary-button">Guardar cambios</button>
           </div>
         </form>
       </section>
 
       <section class="detail-block">
-        <h3>Milestones</h3>
-        <div class="detail-list">
-          ${(item.milestones || []).length ? item.milestones.map((milestone) => `
-            <div class="kpi-card">
-              <div class="metric-row"><strong>${esc(milestone.label)}</strong><span>${esc(formatDate(milestone.date))}</span></div>
-              <p>Owner: ${esc(milestone.owner || item.owner)}</p>
-            </div>
-          `).join("") : `<p>No hay hitos cargados para este objetivo.</p>`}
-        </div>
-      </section>
-
-      <section class="detail-block">
-        <h3>KPIs base</h3>
-        <div class="kpi-list">
-          ${(item.kpis || []).length ? item.kpis.map((kpi) => `
-            <article class="kpi-card">
-              <h3>${esc(kpi.name)}</h3>
-              <p>Meta: ${esc(kpi.target)}</p>
-              <p>Frecuencia: ${esc(kpi.frequency || "No definida")}</p>
-              <p>Hito: ${esc(kpi.milestone || "No definido")}</p>
-            </article>
-          `).join("") : `<p>Este objetivo aun no tiene KPIs cargados.</p>`}
-        </div>
-      </section>
-
-      <section class="detail-block">
-        <h3>Registrar comentario</h3>
+        <h3>Registrar seguimiento</h3>
         <form id="meetingForm" class="meeting-form">
           <input type="hidden" name="objectiveId" value="${esc(item.id)}">
           <div class="form-grid">
@@ -495,26 +512,22 @@ function renderDetail() {
               <textarea name="summary" rows="4" placeholder="Que se reviso, que se acordo y que quedo pendiente" required></textarea>
             </label>
             <label class="field field-full">
-              <span>Acuerdos</span>
-              <textarea name="agreements" rows="3" placeholder="Compromisos o decisiones"></textarea>
-            </label>
-            <label class="field field-full">
-              <span>Riesgos</span>
-              <textarea name="risks" rows="3" placeholder="Bloqueos, alertas o dependencias"></textarea>
+              <span>Acuerdos o decisiones</span>
+              <textarea name="agreements" rows="3" placeholder="Compromisos o definiciones relevantes"></textarea>
             </label>
             <label class="field field-full">
               <span>Proximos pasos</span>
-              <textarea name="nextSteps" rows="3" placeholder="Acciones para antes de la siguiente reunion"></textarea>
+              <textarea name="nextSteps" rows="3" placeholder="Acciones para antes de la siguiente revision"></textarea>
             </label>
           </div>
           <div class="dialog-actions">
-            <button type="submit" class="primary-button">Guardar comentario</button>
+            <button type="submit" class="primary-button">Guardar seguimiento</button>
           </div>
         </form>
       </section>
 
       <section class="detail-block">
-        <h3>Historial de reuniones</h3>
+        <h3>Historial de seguimiento</h3>
         <div class="meeting-list">
           ${meetings.length ? meetings.map((meeting) => `
             <article class="meeting-card">
@@ -530,13 +543,12 @@ function renderDetail() {
               ${meeting.risks ? `<p><strong>Riesgos:</strong> ${multiline(meeting.risks)}</p>` : ""}
               ${meeting.nextSteps ? `<p><strong>Proximos pasos:</strong> ${multiline(meeting.nextSteps)}</p>` : ""}
             </article>
-          `).join("") : `<div class="empty-state"><div><strong>Sin comentarios todavia.</strong><p>Usa el formulario anterior para dejar el seguimiento de tu reunion.</p></div></div>`}
+          `).join("") : `<div class="empty-state"><div><strong>Sin seguimientos todavia.</strong><p>Registra el primer comentario desde este mismo objetivo.</p></div></div>`}
         </div>
       </section>
     </div>
   `;
 }
-
 function submitObjective(event) {
   event.preventDefault();
   const formData = new FormData(event.target);
@@ -566,12 +578,15 @@ function submitObjective(event) {
   saveData();
   closeDialog();
   render();
+  openDetailDialog();
 }
-
 function submitQuickUpdate(event) {
   const formData = new FormData(event.target);
   const objective = byId(String(formData.get("objectiveId")));
   if (!objective) return;
+  objective.title = String(formData.get("title") || objective.title).trim();
+  objective.owner = String(formData.get("owner") || objective.owner).trim();
+  objective.description = String(formData.get("description") || objective.description).trim();
   objective.status = String(formData.get("status") || objective.status);
   objective.progress = clamp(formData.get("progress"), 0, 100);
   objective.nextFollowUp = String(formData.get("nextFollowUp") || "");
@@ -580,7 +595,6 @@ function submitQuickUpdate(event) {
   saveData();
   render();
 }
-
 function submitMeeting(event) {
   const formData = new FormData(event.target);
   const objective = byId(String(formData.get("objectiveId")));
@@ -615,9 +629,9 @@ function removeObjective(objectiveId) {
   state.data.objectives = state.data.objectives.filter((item) => item.id !== objectiveId);
   state.selectedObjectiveId = "";
   saveData();
+  closeDetailDialog();
   render();
 }
-
 function exportBackup() {
   const blob = new Blob([JSON.stringify(state.data, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -667,6 +681,225 @@ function openDialog() {
 
 function closeDialog() {
   refs.objectiveDialog.close();
+}
+
+function openDetailDialog() {
+  const item = byId(state.selectedObjectiveId);
+  if (!item || !refs.detailDialog) return;
+  renderDetail();
+  if (!refs.detailDialog.open) refs.detailDialog.showModal();
+}
+
+function closeDetailDialog() {
+  if (refs.detailDialog?.open) refs.detailDialog.close();
+}
+function openCreatorDialog() {
+  refs.goalCreatorForm.reset();
+  showCreatorStep(1);
+  populateCreatorAreaOptions();
+  document.getElementById("creatorModel").value = DEFAULT_AI_MODEL;
+  refs.generatedMeta.textContent = "La IA completara este borrador con un titulo, descripcion, KPIs, tags y un primer paso sugerido.";
+  setCreatorBusy(false);
+  setAIStatus("Verificando conexion con la IA...", "info");
+  refreshAIStatus();
+  // Default due date to end of current year
+  const endOfYear = `${new Date().getFullYear()}-12-31`;
+  document.getElementById("generatedDueDate").value = endOfYear;
+  refs.goalCreatorDialog.showModal();
+}
+
+function closeCreatorDialog() {
+  setCreatorBusy(false);
+  refs.goalCreatorDialog.close();
+}
+
+function populateCreatorAreaOptions() {
+  const areas = getAreas();
+  const areaSelect = document.getElementById("generatedArea");
+  const selectedArea = areaSelect.value;
+  areaSelect.innerHTML = areas
+    .map((area) => `<option value="${esc(area)}">${esc(area)}</option>`)
+    .join("");
+  areaSelect.value = areas.includes(selectedArea) ? selectedArea : areas[0] || "";
+}
+
+async function nextToStep2() {
+  const payload = collectCreatorPayload();
+  const validationError = validateCreatorPayload(payload);
+
+  if (validationError) {
+    alert(validationError);
+    return;
+  }
+
+  setCreatorBusy(true);
+  setAIStatus("Redactando objetivo con GPT...", "working");
+
+  try {
+    const draft = await requestObjectiveDraft(payload);
+    applyGeneratedDraft(draft, payload);
+    showCreatorStep(2);
+    setAIStatus(`IA disponible. Ultimo borrador generado con ${draft.model || payload.model}.`, "success");
+  } catch (error) {
+    setAIStatus(error.message, "error");
+    alert(error.message);
+  } finally {
+    setCreatorBusy(false);
+  }
+}
+
+function backToStep1() {
+  showCreatorStep(1);
+}
+
+function submitGoalCreator(event) {
+  event.preventDefault();
+  const formData = new FormData(event.target);
+  const milestoneName = document.getElementById("generatedMilestone").value.trim();
+  const dueDate = formData.get("dueDate");
+  const modelUsed = String(formData.get("model") || state.ai.lastModel || DEFAULT_AI_MODEL);
+
+  const kpiText = String(formData.get("kpis") || "").trim();
+  const kpis = kpiText
+    ? kpiText
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line) => ({ name: line, target: "" }))
+    : [];
+  const tags = String(formData.get("tags") || "")
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+
+  const objective = {
+    id: `obj-${Date.now()}`,
+    area: String(formData.get("area")),
+    title: String(formData.get("title")),
+    owner: String(formData.get("owner")).trim(),
+    type: "Asistente GPT",
+    status: "no-iniciado",
+    progress: 0,
+    source: [`Redactado con ${modelUsed} via OpenAI Responses API`],
+    tags: tags.length ? tags : ["gpt", "ia", "asistente"],
+    description: String(formData.get("description")),
+    executiveNote: "Borrador inicial generado con IA y afinado por el usuario.",
+    dueDate: dueDate || "",
+    nextFollowUp: "",
+    milestones: milestoneName && dueDate ? [{ id: `m-${Date.now()}`, label: milestoneName, date: dueDate, owner: String(formData.get("owner")).trim() }] : [],
+    kpis,
+    meetings: []
+  };
+  state.data.objectives.unshift(objective);
+  state.selectedObjectiveId = objective.id;
+  saveData();
+  closeCreatorDialog();
+  render();
+  openDetailDialog();
+}
+function showCreatorStep(stepNumber) {
+  document.getElementById("step1").classList.toggle("active", stepNumber === 1);
+  document.getElementById("step2").classList.toggle("active", stepNumber === 2);
+}
+
+function collectCreatorPayload() {
+  return {
+    management: document.getElementById("creatorManagement").value.trim(),
+    areas: document.getElementById("creatorAreas").value.trim(),
+    strategy: document.getElementById("creatorStrategy").value.trim(),
+    projects: document.getElementById("creatorProjects").value.trim(),
+    outcome: document.getElementById("creatorOutcome").value.trim(),
+    constraints: document.getElementById("creatorConstraints").value.trim(),
+    model: document.getElementById("creatorModel").value || DEFAULT_AI_MODEL
+  };
+}
+
+function validateCreatorPayload(payload) {
+  if (!payload.management || !payload.areas || !payload.strategy || !payload.projects) {
+    return "Por favor, completa gerencia, areas, estrategia y proyectos antes de pedir la redaccion.";
+  }
+  return "";
+}
+
+async function refreshAIStatus() {
+  if (window.location.protocol === "file:") {
+    state.ai.available = false;
+    state.ai.checked = true;
+    setAIStatus("La IA requiere abrir la app desde el servidor local (server.ps1) y definir OPENAI_API_KEY.", "warning");
+    return false;
+  }
+
+  try {
+    const response = await fetch(AI_HEALTH_ENDPOINT, { cache: "no-store" });
+    const payload = await response.json();
+    state.ai.available = Boolean(payload.available);
+    state.ai.checked = true;
+    state.ai.lastModel = payload.model || DEFAULT_AI_MODEL;
+
+    if (payload.available) {
+      setAIStatus(`IA disponible. Modelo por defecto del servidor: ${state.ai.lastModel}.`, "success");
+      return true;
+    }
+
+    setAIStatus("Servidor activo, pero falta OPENAI_API_KEY en el entorno o en .env.", "warning");
+    return false;
+  } catch {
+    state.ai.available = false;
+    state.ai.checked = true;
+    setAIStatus("No pude conectar con /api/ai/health. Inicia server.ps1 para usar GPT.", "warning");
+    return false;
+  }
+}
+
+async function requestObjectiveDraft(payload) {
+  const response = await fetch(AI_ENDPOINT, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  let data = {};
+  try {
+    data = await response.json();
+  } catch {
+    data = {};
+  }
+
+  if (!response.ok) {
+    throw new Error(data.error || "No pude generar el borrador con IA.");
+  }
+
+  state.ai.available = true;
+  state.ai.checked = true;
+  state.ai.lastModel = data.model || payload.model || DEFAULT_AI_MODEL;
+  return data;
+}
+
+function applyGeneratedDraft(draft, payload) {
+  document.getElementById("generatedTitle").value = draft.title || "";
+  document.getElementById("generatedDescription").value = draft.description || "";
+  document.getElementById("generatedKpis").value = Array.isArray(draft.kpis) ? draft.kpis.join("\n") : "";
+  document.getElementById("generatedTags").value = Array.isArray(draft.tags) ? draft.tags.join(", ") : "gpt, ia, objetivo";
+  document.getElementById("generatedMilestone").value = draft.milestone || "";
+  refs.generatedMeta.textContent = `Borrador generado con ${draft.model || payload.model || DEFAULT_AI_MODEL}. Puedes editarlo antes de crear el objetivo.`;
+}
+
+function setAIStatus(message, tone) {
+  if (!refs.aiStatusMessage) return;
+  refs.aiStatusMessage.textContent = message;
+  refs.aiStatusMessage.classList.remove("is-info", "is-success", "is-warning", "is-error", "is-working");
+  refs.aiStatusMessage.classList.add(`is-${tone || "info"}`);
+}
+
+function setCreatorBusy(isBusy) {
+  refs.nextToStep2Btn.disabled = isBusy;
+  refs.regenerateDraftBtn.disabled = isBusy;
+  refs.backToStep1Btn.disabled = isBusy;
+  refs.closeCreatorDialogBtn.disabled = isBusy;
+  refs.nextToStep2Btn.textContent = isBusy ? "Redactando con IA..." : "Generar borrador con IA";
+  refs.regenerateDraftBtn.textContent = isBusy ? "Regenerando..." : "Regenerar con IA";
 }
 
 function byId(objectiveId) {
@@ -769,4 +1002,7 @@ function esc(value) {
 }
 
 init();
+
+
+
 

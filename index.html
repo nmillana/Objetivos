@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Objetivos Hub | Gerencia de Personas</title>
+  <title>Objetivos Gerencia Personas</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -11,14 +11,14 @@
     <div class="login-card">
       <section class="login-panel">
         <div class="jira-mark">
-          <span class="brand-square small">J</span>
+          <span class="brand-square small">G</span>
           <div>
             <p class="eyebrow">Acceso</p>
-            <h2>Inicia sesion para entrar al workspace</h2>
+            <h2>Inicia sesion para entrar al panel</h2>
           </div>
         </div>
         <p class="login-copy">
-          Este acceso bloquea la entrada al tablero publicado y mantiene la sesion en este navegador.
+          Este acceso mantiene la sesion en este navegador y protege el panel publicado.
         </p>
 
         <form id="loginForm" class="login-form">
@@ -33,9 +33,8 @@
           </label>
 
           <p id="loginError" class="login-error" hidden>Credenciales invalidas. Revisa correo y contrasena.</p>
-          <button type="submit" class="primary-button login-button">Entrar al board</button>
+          <button type="submit" class="primary-button login-button">Entrar al panel</button>
         </form>
-
       </section>
     </div>
   </div>
@@ -43,28 +42,25 @@
   <div class="jira-shell is-hidden" id="appShell">
     <header class="topbar">
       <div class="topbar-left">
-        <button type="button" class="topbar-icon" aria-label="Workspace">+</button>
         <div class="brand-lockup">
-          <span class="brand-square small">J</span>
+          <span class="brand-square small">GP</span>
           <div>
-            <strong>Jira-style Goals</strong>
-            <span>Gerencia de Personas</span>
+            <strong>Objetivos Gerencia Personas</strong>
+            <span>Panel de seguimiento</span>
           </div>
         </div>
       </div>
 
       <div class="topbar-center">
         <label class="top-search">
-          <span>Search</span>
-          <input id="searchInput" type="search" placeholder="Buscar objetivo, area, responsable o tag">
+          <span>Buscar</span>
+          <input id="searchInput" type="search" placeholder="Buscar objetivo, area o responsable">
         </label>
       </div>
 
       <div class="topbar-right">
-        <button type="button" class="secondary-button" id="exportBtn">Exportar</button>
-        <label class="secondary-button file-label" for="importInput">Importar</label>
-        <input id="importInput" type="file" accept="application/json" hidden>
-        <button type="button" class="primary-button" id="addObjectiveBtn">Create</button>
+        <button type="button" class="primary-button" id="createAssistantBtn">Crear con IA</button>
+        <button type="button" class="ghost-button" id="addObjectiveBtn">Crear manual</button>
         <button type="button" class="ghost-button" id="logoutBtn">Salir</button>
         <div class="user-chip">
           <span class="user-avatar" id="currentUserAvatar">--</span>
@@ -81,18 +77,10 @@
         <section class="sidebar-project">
           <div class="project-badge">GP</div>
           <div>
-            <strong>Gerencia de Personas</strong>
-            <span>Objective tracking workspace</span>
+            <strong>Seguimiento simple</strong>
+            <span>Filtros y areas del panel</span>
           </div>
         </section>
-
-        <nav class="sidebar-nav">
-          <button type="button" class="sidebar-link active">Board</button>
-          <button type="button" class="sidebar-link">Backlog</button>
-          <button type="button" class="sidebar-link">Reports</button>
-          <button type="button" class="sidebar-link">Meetings</button>
-          <button type="button" class="sidebar-link">Settings</button>
-        </nav>
 
         <section class="sidebar-section">
           <div class="sidebar-title-row">
@@ -103,7 +91,7 @@
         </section>
 
         <section class="sidebar-section">
-          <h2>Quick filters</h2>
+          <h2>Filtros</h2>
           <label class="field compact-field">
             <span>Area</span>
             <select id="areaFilter"></select>
@@ -117,10 +105,6 @@
             <select id="ownerFilter"></select>
           </label>
           <label class="filter-check">
-            <input type="checkbox" id="dueSoonOnly">
-            <span>Solo hitos en 45 dias</span>
-          </label>
-          <label class="filter-check">
             <input type="checkbox" id="atRiskOnly">
             <span>Solo objetivos en riesgo</span>
           </label>
@@ -129,51 +113,29 @@
       </aside>
 
       <main class="workspace-main">
-        <section class="board-header">
+        <section class="board-header simple-board-header">
           <div class="board-header-copy">
-            <p class="crumb">Projects / Gerencia de Personas</p>
-            <h1>Board de objetivos</h1>
+            <p class="crumb">Gerencia de Personas</p>
+            <h1>Seguimiento de objetivos</h1>
             <p>
-              Vista estilo Jira para seguir objetivos estrategicos, hitos, avances y comentarios de reunion desde un mismo lugar.
+              Haz click en un objetivo para abrir su seguimiento y editarlo en una sola ventana.
             </p>
             <p class="board-count"><span id="resultCount">0</span> objetivos visibles</p>
           </div>
           <div class="summary-grid" id="summaryGrid"></div>
         </section>
 
-        <section class="milestone-section">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">Timeline</p>
-              <h2>Hitos proximos</h2>
-            </div>
-            <p>Priorizados para la siguiente reunion de seguimiento.</p>
-          </div>
-          <div class="milestone-strip" id="milestoneStrip"></div>
-        </section>
-
-        <section class="workspace-board">
+        <section class="workspace-board single-board">
           <div class="kanban-shell">
             <div class="section-heading sticky-heading">
               <div>
                 <p class="eyebrow">Board</p>
                 <h2>Estado de los objetivos</h2>
               </div>
-              <p>Selecciona una tarjeta para ver el detalle completo a la derecha.</p>
+              <p>Abre cada tarjeta para registrar seguimiento, comentarios y avances.</p>
             </div>
             <div class="kanban-columns" id="boardColumns"></div>
           </div>
-
-          <aside class="insights-panel">
-            <div class="section-heading panel-heading">
-              <div>
-                <p class="eyebrow">Insights</p>
-                <h2 id="detailTitle">Selecciona un objetivo</h2>
-              </div>
-              <p>Actualiza estado, avance, hitos y comentarios.</p>
-            </div>
-            <div id="detailPanel" class="detail-panel"></div>
-          </aside>
         </section>
       </main>
     </div>
@@ -183,8 +145,8 @@
     <form id="objectiveForm" method="dialog" class="dialog-form">
       <div class="dialog-head">
         <div>
-          <p class="eyebrow">Create issue</p>
-          <h2>Agregar objetivo al board</h2>
+          <p class="eyebrow">Crear objetivo</p>
+          <h2>Agregar objetivo al panel</h2>
         </div>
         <button type="button" class="icon-button" id="closeDialogBtn" aria-label="Cerrar">x</button>
       </div>
@@ -227,12 +189,12 @@
         </label>
 
         <label class="field">
-          <span>Proximo hito</span>
+          <span>Proximo paso</span>
           <input id="newMilestoneName" name="milestoneName" type="text" placeholder="Ej. Validacion con gerencia">
         </label>
 
         <label class="field">
-          <span>Fecha del hito</span>
+          <span>Fecha objetivo</span>
           <input id="newMilestoneDate" name="milestoneDate" type="date">
         </label>
 
@@ -245,6 +207,124 @@
       <div class="dialog-actions">
         <button type="button" class="ghost-button" id="cancelDialogBtn">Cancelar</button>
         <button type="submit" class="primary-button">Guardar objetivo</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="detailDialog" class="objective-dialog detail-dialog">
+    <div class="dialog-form detail-dialog-form">
+      <div class="dialog-head">
+        <div>
+          <p class="eyebrow">Seguimiento</p>
+          <h2 id="detailTitle">Objetivo</h2>
+        </div>
+        <button type="button" class="icon-button" id="closeDetailDialogBtn" aria-label="Cerrar">x</button>
+      </div>
+      <div id="detailPanel" class="detail-panel"></div>
+    </div>
+  </dialog>
+
+  <dialog id="goalCreatorDialog" class="objective-dialog">
+    <form id="goalCreatorForm" method="dialog" class="dialog-form">
+      <div class="dialog-head">
+        <div>
+          <p class="eyebrow">Crear objetivo</p>
+          <h2>Creador de objetivos con IA (GPT)</h2>
+        </div>
+        <button type="button" class="icon-button" id="closeCreatorDialogBtn" aria-label="Cerrar">x</button>
+      </div>
+
+      <div id="creatorSteps" class="creator-steps">
+        <div id="step1" class="creator-step active">
+          <h3>Paso 1: Contexto para la IA</h3>
+          <div class="assistant-note">
+            <strong>Redaccion asistida por GPT</strong>
+            <p>Completa el contexto y la app preparara un borrador editable con titulo, descripcion, KPIs, tags y un primer paso sugerido.</p>
+            <p id="aiStatusMessage" class="ai-status">Verificando conexion con la IA...</p>
+          </div>
+          <div class="dialog-grid">
+            <label class="field">
+              <span>Gerencia</span>
+              <input id="creatorManagement" name="management" type="text" placeholder="Ej. Gerencia de Personas" required>
+            </label>
+            <label class="field">
+              <span>Areas en las que estoy</span>
+              <input id="creatorAreas" name="areas" type="text" placeholder="Ej. Desarrollo, Capacitacion" required>
+            </label>
+            <label class="field">
+              <span>Modelo OpenAI</span>
+              <select id="creatorModel" name="model">
+                <option value="gpt-5-mini" selected>GPT-5 mini</option>
+                <option value="gpt-5.2">GPT-5.2</option>
+              </select>
+            </label>
+            <label class="field field-full">
+              <span>Estrategia de la gerencia</span>
+              <textarea id="creatorStrategy" name="strategy" rows="3" placeholder="Describe la estrategia principal" required></textarea>
+            </label>
+            <label class="field field-full">
+              <span>Posibles proyectos pre acordados</span>
+              <textarea id="creatorProjects" name="projects" rows="3" placeholder="Lista de proyectos relevantes" required></textarea>
+            </label>
+            <label class="field field-full">
+              <span>Impacto esperado</span>
+              <textarea id="creatorOutcome" name="outcome" rows="3" placeholder="Que cambio concreto deberia generar este objetivo"></textarea>
+            </label>
+            <label class="field field-full">
+              <span>Restricciones o consideraciones</span>
+              <textarea id="creatorConstraints" name="constraints" rows="3" placeholder="Dependencias, tono esperado, audiencia, presupuesto, plazos o riesgos"></textarea>
+            </label>
+          </div>
+          <div class="dialog-actions">
+            <button type="button" class="primary-button" id="nextToStep2Btn">Generar borrador con IA</button>
+          </div>
+        </div>
+
+        <div id="step2" class="creator-step">
+          <h3>Paso 2: Revisar borrador generado con GPT</h3>
+          <div class="generated-objective">
+            <div class="generated-toolbar">
+              <p id="generatedMeta" class="field-note">La IA completara este borrador cuando generes el objetivo.</p>
+              <button type="button" class="secondary-button" id="regenerateDraftBtn">Regenerar con IA</button>
+            </div>
+            <label class="field field-full">
+              <span>Titulo sugerido</span>
+              <input id="generatedTitle" name="title" type="text" required>
+            </label>
+            <label class="field field-full">
+              <span>Descripcion sugerida</span>
+              <textarea id="generatedDescription" name="description" rows="6" required></textarea>
+            </label>
+            <label class="field field-full">
+              <span>KPI sugeridos (una por linea)</span>
+              <textarea id="generatedKpis" name="kpis" rows="4" placeholder="Se generaran automaticamente"></textarea>
+            </label>
+            <label class="field field-full">
+              <span>Tags sugeridos</span>
+              <input id="generatedTags" name="tags" type="text" placeholder="Ej. liderazgo, clima, eficiencia">
+            </label>
+            <label class="field">
+              <span>Area</span>
+              <select id="generatedArea" name="area" required></select>
+            </label>
+            <label class="field">
+              <span>Responsable</span>
+              <input id="generatedOwner" name="owner" type="text" placeholder="Ej. Paula" required>
+            </label>
+            <label class="field">
+              <span>Fecha objetivo</span>
+              <input id="generatedDueDate" name="dueDate" type="date" required>
+            </label>
+            <label class="field">
+              <span>Primer paso sugerido</span>
+              <input id="generatedMilestone" name="milestone" type="text" placeholder="Ej. Validacion inicial">
+            </label>
+          </div>
+          <div class="dialog-actions">
+            <button type="button" class="ghost-button" id="backToStep1Btn">Atras</button>
+            <button type="submit" class="primary-button">Crear objetivo</button>
+          </div>
+        </div>
       </div>
     </form>
   </dialog>

@@ -7,3 +7,7 @@
 
 # Respaldos exportados desde el panel
 panel-objetivos-gerencia-personas-*.json
+
+# Configuracion local del servidor IA
+.env
+
